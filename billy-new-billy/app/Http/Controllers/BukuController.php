@@ -68,9 +68,10 @@ class BukuController extends Controller
      * @param  \App\Models\Buku  $buku
      * @return \Illuminate\Http\Response
      */
-    public function edit(Buku $buku)
+    public function edit($id)
     {
-        //
+        $buku = Buku::find($id);
+        return view('Buku.update', compact('buku'));
     }
 
     /**
@@ -80,9 +81,31 @@ class BukuController extends Controller
      * @param  \App\Models\Buku  $buku
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Buku $buku)
+    public function update(Request $request, $id)
     {
-        //
+        $buku = Buku::findOrFail($id);
+        if ($request->file('foto') == ""){
+            $buku->update([
+                'nama' => $request->nama,
+                'penerbit' => $request->penerbit,
+                'pengarang' => $request->pengarang,
+            ]);
+        } else {
+            Storage::disk('local')->delete('public/buku/' . $buku->foto);
+            $foto = $request->file('foto');
+            $foto->storeAs('public/buku', $foto->hashName());
+            $buku->update([
+                'nama' => $request->nama,
+                'foto' => $foto->hashName(),
+                'penerbit' => $request->penerbit,
+                'pengarang' => $request->pengarang, 
+            ]);
+        }
+        if ($buku) {
+            return redirect()->route('buku.index')->with(['success' => 'Data Berhasil Diubah!']);
+        } else {
+            return redirect()->route('buku.index')->with(['error' => 'Data Gagal Diubah']);
+        }
     }
 
     /**
@@ -91,8 +114,15 @@ class BukuController extends Controller
      * @param  \App\Models\Buku  $buku
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Buku $buku)
+    public function destroy($id)
     {
-        //
+        $buku = Buku::findOrFail($id);
+        Storage::disk('local')->delete('public/buku/' . $buku->foto);
+        $buku->delete();
+        if ($buku) {
+            return redirect()->route('buku.index')->with(['success' => 'Data Berhasil Dihapus!']);
+        } else {
+            return redirect()->route('buku.index')->with(['error' => 'Data Gagal Dihapus']);
+        }
     }
 }
